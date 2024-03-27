@@ -8,10 +8,13 @@ import os
 import re
 import sys
 
+# set JENKINS_USER and JENKINS_TOKEN in environment
+
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("-j", "--json", action='store_true', help="Output json")
     ap.add_argument("-P", "--allparams", action='store_true', help="Output all job parameters")
+    ap.add_argument("-l", "--list", action='store_true', help="List all jobs and exit")
     ap.add_argument('jobre', type=str, nargs="?", default='^ceph-dev-new$', help="regexp to match job name")
     return ap.parse_args() 
 
@@ -72,6 +75,13 @@ def main():
     j=jenkins.Jenkins('https://jenkins.ceph.com', jenkins_user, jenkins_token)
 
     args = parse_args()
+
+    if args.list:
+        ji = j.get_info()
+        jobs = ji['jobs']
+        for job in jobs:
+            print(f'{job["name"]}')
+        return 0
 
     # jobinfo = j.get_job_info_regex(args.jobre)
     # get_job_info_regex doesn't allow passing "fetch_all_builds", so
