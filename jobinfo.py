@@ -15,6 +15,7 @@ def parse_args():
     ap.add_argument("-j", "--json", action='store_true', help="Output json")
     ap.add_argument("-P", "--allparams", action='store_true', help="Output all job parameters")
     ap.add_argument("-l", "--list", action='store_true', help="List all jobs and exit")
+    ap.add_argument("-c", "--count", type=int, help="Limit output to this many jobs")
     ap.add_argument('jobre', type=str, nargs="?", default='^ceph-dev-new$', help="regexp to match job name")
     return ap.parse_args() 
 
@@ -97,7 +98,11 @@ def main():
         name=ji['name']
         if args.json:
             outdict = dict(name=name, builds=list())
+        buildcount = 0
         for build in ji['builds']:
+            if args.count and buildcount >= args.count:
+                break
+            buildcount += 1
             buildnum = build['number']
             bi = j.get_build_info(name, buildnum)
             '''
