@@ -64,7 +64,10 @@ def output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=
         return outdict
 
     nltab = "\n\t"
-    print(f'#{buildnum}: {reason}{nltab}{nltab.join(paramdict.values())}{nltab}started: {timestr} ', end='')
+    print(f'#{buildnum}: {reason}', end='')
+    if len(paramdict):
+        print(f'{nltab}{nltab.join(paramdict.values())}', end='')
+    print(f'{nltab}started: {timestr} ', end='')
     if bi['building']:
         print(f'still building, est duration {to_minsec(bi["estimatedDuration"])}')
     else: 
