@@ -42,7 +42,7 @@ def decruft(reason):
     return reason
 
 
-def output(name, buildnum, reason, paramdict, timestr, bi, returndict=False):
+def output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=False):
     if returndict:
         outdict = {
             "buildnum": buildnum,
@@ -59,6 +59,7 @@ def output(name, buildnum, reason, paramdict, timestr, bi, returndict=False):
             outdict.update(dict(
                 buildtime=to_minsec(bi['duration']),
                 result=bi['result'],
+                waittime=waittime,
             ))
         return outdict
 
@@ -67,7 +68,7 @@ def output(name, buildnum, reason, paramdict, timestr, bi, returndict=False):
     if bi['building']:
         print(f'still building, est duration {to_minsec(bi["estimatedDuration"])}')
     else: 
-        print(f'took {to_minsec(bi["duration"])} {bi["result"]}')
+        print(f'waited {waittime}, took {to_minsec(bi["duration"])} {bi["result"]}')
 
 
 def main():
@@ -106,35 +107,57 @@ def main():
             buildnum = build['number']
             bi = j.get_build_info(name, buildnum)
             '''
-            example CauseAction in actions[]:
             {'_class': 'hudson.model.CauseAction',
              'causes': [{'_class': 'org.jenkinsci.plugins.ghprb.GhprbCause',
                  'shortDescription': 'GitHub pull request #56203 of commit '
                                      'ab4c5daead7f26d41028625453d50bb58d3b02be,'
                                      ' no merge conflicts.'}]}
+
+             {'_class': 'jenkins.metrics.impl.TimeInQueueAction',
+              'blockedDurationMillis': 0,
+              'blockedTimeMillis': 0,
+              'buildableDurationMillis': 4,
+              'buildableTimeMillis': 4,
+              'buildingDurationMillis': 985724,
+              'executingTimeMillis': 985724,
+              'executorUtilization': 1.0,
+              'subTaskCount': 0,
+              'waitingDurationMillis': 6797,
+              'waitingTimeMillis': 6797},
+
             '''
             reason = "??"
             paramnames = list()
             paramdict=dict()
             for act in bi['actions']:
                 cls = act.get('_class', None)
-                if cls == 'hudson.model.CauseAction':
+                if cls is None:
+                    continue
+
+                if cls.endswith('hudson.model.CauseAction'):
                     if len(act['causes']) > 1:
                         print(f'{name} #{buildnum} has more than one cause?', file=sys.stderr)
                     reason = act['causes'][0]['shortDescription']
-                if cls and cls.endswith('ParametersAction'):
+
+                if cls.endswith('ParametersAction'):
                     params = act['parameters']
                     pois = ['BRANCH', 'ARCHS', 'DISTROS', 'FLAVOR']
                     for param in params:
                         paramnames.append(param['name'])
                         if args.allparams or param['name'] in pois:
                             paramdict[param['name']] = param['value']
+                
+                if cls.endswith('TimeInQueueAction'):
+                    waittime = None
+                    if bi['building'] == False:
+                        waittime = to_minsec(act['waitingTimeMillis'])
+
             reason = decruft(reason)
             timestr = fromtimestamp(bi['timestamp'] / 1000).strftime('%d %b %H:%M:%S')
             if args.json:
-                outdict['builds'].append(output(name, buildnum, reason, paramdict, timestr, bi, returndict=True))
+                outdict['builds'].append(output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=True))
             else:
-                output(name, buildnum, reason, paramdict, timestr, bi, returndict=False)
+                output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=False)
     if args.json:
         print(json.dumps(outdict))
 
