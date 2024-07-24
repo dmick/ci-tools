@@ -13,6 +13,10 @@ def collect_jenkins_slaves():
     jenk_proc = subprocess.run(["jenkins.tags", "-o", "-d", " ",],
                                capture_output=True, check=True)
     lines = jenk_proc.stdout.decode().split('\n')
+    os.environ['JENKINS_HOST'] = '2.jenkins.ceph.com'
+    jenk_proc = subprocess.run(["jenkins.tags", "-o", "-d", " ",],
+                               capture_output=True, check=True)
+    lines += jenk_proc.stdout.decode().split('\n')
     return sorted([l.strip() for l in lines if l])
 
 
