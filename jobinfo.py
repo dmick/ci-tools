@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import time
 
 # set JENKINS_USER and JENKINS_TOKEN in environment
 
@@ -19,12 +20,17 @@ def parse_args():
     ap.add_argument('jobre', type=str, nargs="?", default='^ceph-dev-new$', help="regexp to match job name")
     return ap.parse_args() 
 
+
 def to_minsec(ms):
-    totalsec = ms // 1000
+    return sec_to_minsec(ms // 1000)
+
+
+def sec_to_minsec(totalsec):
     h = totalsec // 3600
     m = (totalsec - (h * 3600)) // 60
     s = totalsec - (h * 3600) - (m * 60)
     return f'{h:02d}:{m:02d}:{s:02d}'
+
 
 def decruft(reason):
     '''
@@ -42,13 +48,14 @@ def decruft(reason):
     return reason
 
 
-def output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=False):
+def output(name, buildnum, reason, paramdict, start, age, bi, waittime, returndict=False):
     if returndict:
         outdict = {
             "buildnum": buildnum,
             "reason": reason,
             "params": paramdict,
-            "started": timestr,
+            "started": start,
+            "age": age,
             "building": bi["building"],
         }
         if bi["building"]:
@@ -67,11 +74,15 @@ def output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=
     print(f'#{buildnum}: {reason}', end='')
     if len(paramdict):
         print(f'{nltab}{nltab.join(paramdict.values())}', end='')
-    print(f'{nltab}started: {timestr} ', end='')
+    print(f'{nltab}started: {start} ', end='')
     if bi['building']:
-        print(f'still building, est duration {to_minsec(bi["estimatedDuration"])}')
+        print(f'building for {sec_to_minsec(age)}, est duration {to_minsec(bi["estimatedDuration"])}')
     else: 
         print(f'waited {waittime}, took {to_minsec(bi["duration"])} {bi["result"]}')
+
+
+def ts_to_str(ts):
+    return fromtimestamp(ts).strftime('%d %b %H:%M:%S')
 
 
 def main():
@@ -156,11 +167,12 @@ def main():
                         waittime = to_minsec(act['waitingTimeMillis'])
 
             reason = decruft(reason)
-            timestr = fromtimestamp(bi['timestamp'] / 1000).strftime('%d %b %H:%M:%S')
+            start = ts_to_str(bi['timestamp'] / 1000)
+            age = int(int(time.time()) - (bi['timestamp'] / 1000))
             if args.json:
-                outdict['builds'].append(output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=True))
+                outdict['builds'].append(output(name, buildnum, reason, paramdict, start, age, bi, waittime, returndict=True))
             else:
-                output(name, buildnum, reason, paramdict, timestr, bi, waittime, returndict=False)
+                output(name, buildnum, reason, paramdict, start, age, bi, waittime, returndict=False)
     if args.json:
         print(json.dumps(outdict))
 
