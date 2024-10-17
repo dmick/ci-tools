@@ -49,18 +49,19 @@ def decruft(reason):
 
 
 def output(name, buildnum, reason, paramdict, start, age, bi, waittime, returndict=False):
+    age = sec_to_minsec(age)
     if returndict:
         outdict = {
             "buildnum": buildnum,
             "reason": reason,
             "params": paramdict,
             "started": start,
-            "age": age,
             "building": bi["building"],
         }
         if bi["building"]:
             outdict.update(dict(
-                estimatedDuration=to_minsec(bi["estimatedDuration"])
+                estimatedDuration=to_minsec(bi["estimatedDuration"]),
+                age=age,
             ))
         else:
             outdict.update(dict(
@@ -76,7 +77,7 @@ def output(name, buildnum, reason, paramdict, start, age, bi, waittime, returndi
         print(f'{nltab}{nltab.join(paramdict.values())}', end='')
     print(f'{nltab}started: {start} ', end='')
     if bi['building']:
-        print(f'building for {sec_to_minsec(age)}, est duration {to_minsec(bi["estimatedDuration"])}')
+        print(f'building for {age}, est duration {to_minsec(bi["estimatedDuration"])}')
     else: 
         print(f'waited {waittime}, took {to_minsec(bi["duration"])} {bi["result"]}')
 
