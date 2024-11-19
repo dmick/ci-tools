@@ -46,7 +46,10 @@ def main():
                 if ts:
                     ts = datetime.datetime.fromtimestamp(ts/1000).strftime('%b %d')
             hostname = name[name.find('+')+1:]
-            print(f'{hostname} {temp}offline: {ts} {desc}')
+            if temp:
+                print(f'{hostname} {temp}offline: {ts} {desc}')
+            else:
+                print(f'{hostname} offline')
             continue
         if args.offline:
             continue
