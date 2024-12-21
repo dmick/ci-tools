@@ -10,11 +10,11 @@ if ANSIBLE_INVENTORY.endswith('/sepia'):
     ANSIBLE_INVENTORY=ANSIBLE_INVENTORY[:-6]
 
 def collect_jenkins_slaves():
-    jenk_proc = subprocess.run(["jenkins.tags", "-o", "-d", " ",],
+    jenk_proc = subprocess.run(["jenkins-tags", "-o", "-d", " ",],
                                capture_output=True, check=True)
     lines = jenk_proc.stdout.decode().split('\n')
     os.environ['JENKINS_HOST'] = '2.jenkins.ceph.com'
-    jenk_proc = subprocess.run(["jenkins.tags", "-o", "-d", " ",],
+    jenk_proc = subprocess.run(["jenkins-tags", "-o", "-d", " ",],
                                capture_output=True, check=True)
     lines += jenk_proc.stdout.decode().split('\n')
     return sorted([l.strip() for l in lines if l])
@@ -71,13 +71,15 @@ def main():
             jtags = jtags.split(maxsplit=1)[1]
             atags = split_sort_join(atags)
             jtags = split_sort_join(jtags)
-            
+
             if jtags != atags:
                 print(f'{jhost}')
                 print(f'jenkins tags: {jtags}')
                 print(f'ansible tags: {atags}')
                 print()
-            break
+                break
+            else:
+                print(f'{ahost} checks out')
 
 
 if __name__ == "__main__":
