@@ -14,12 +14,20 @@ j=jenkins.Jenkins('https://jenkins.ceph.com', jenkins_user, jenkins_token)
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument('-o', '--offline', action='store_true', help='Show only offline nodes')
+    ap.add_argument('nodes', nargs='*')
     return ap.parse_args()
+
+def shortname(s):
+    if '+' not in s:
+        return s
+    return s[s.index('+')+1:]
 
 def main():
     args=parse_args()
     print("getting nodelist...", end='', file=sys.stderr)
     nodes = j.get_nodes()
+    newnodes = list()
+    nodes = [n for n in nodes if shortname(n['name']) in args.nodes]
     print(f'{len(nodes)} nodes found', file=sys.stderr)
 
     nodetojob = dict()
@@ -47,11 +55,9 @@ def main():
                     ts = datetime.datetime.fromtimestamp(ts/1000).strftime('%b %d')
             hostname = name[name.find('+')+1:]
             if temp:
-                print(f'{hostname} {temp}offline: {ts} {desc}')
+                nodetojob[name]['offline'] = f'{temp}offline: {ts} {desc}'
             else:
-                print(f'{hostname} offline')
-            continue
-        if args.offline:
+                nodetojob[name]['offline'] = 'offline'
             continue
         print(".", end='', file=sys.stderr, flush=True)
 
@@ -72,11 +78,16 @@ def main():
     if args.offline:
         return 0
     print(file=sys.stderr)
-    idlecnt = busycnt = 0
+
+    idlecnt = busycnt = offlinecnt = 0
     for k,v in nodetojob.items():
         name = k
         # chop off IP addr
-        name = name[name.find('+')+1:]
+        name = shortname(name)
+        if 'offline' in v:
+            print(f'{name}: {v["offline"]} ({",".join(v["tags"])})')
+            offlinecnt += 1
+            continue
         if 'builds' in v:
             buildstr = f'{len(v["builds"])} active builds'
             busycnt += 1
@@ -88,7 +99,7 @@ def main():
             for b in v['builds']:
                 print(f'{b}')
         print()
-    print(f'Idle: {idlecnt}  Busy: {busycnt}')
+    print(f'Idle: {idlecnt}  Busy: {busycnt} Offline: {offlinecnt}')
 
 if __name__ == '__main__':
     sys.exit(main())
