@@ -107,7 +107,8 @@ def main():
         if '+' in name:
             name = name[name.index('+')+1:]
 
-        hosts.append({"name": name, "offline": host['offline'], "tags": tags})
+        offline_reason = host.get('offlineCauseReason')
+        hosts.append({"name": name, "offline": host['offline'], "tags": tags, "offline_reason": offline_reason})
 
     if args.list:
         print(args.delimiter.join([host['name'] for host in hosts]))
@@ -118,8 +119,12 @@ def main():
             print(f'{name}: \"{" ".join(tags)}\"')
     else:
         for host in hosts:
-            print(f'{host["name"]}: {args.delimiter.join(host["tags"])} {"OFFLINE" if host["offline"] else ""}')
-
+            offlinestr=''
+            if host["offline"]:
+                offlinestr = 'OFFLINE'
+                if 'offline_reason' in host:
+                    offlinestr += f' {host["offline_reason"]}'
+            print(f'{host["name"]}: {args.delimiter.join(host["tags"])} {offlinestr}')
 
 if __name__ == "__main__":
     sys.exit(main())
