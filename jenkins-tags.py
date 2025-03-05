@@ -55,6 +55,12 @@ def expand_csv_to_list(l):
         newl = l[0].split(',')
     return newl
 
+sets_of_interest = (
+    ("arm64", "jammy"),
+    ("amd64", "jammy"),
+    ("arm64", "centos9"),
+    ("amd64", "centos9"),
+)
 
 def main():
     host = os.environ.get('JENKINS_HOST', 'jenkins.ceph.com')
@@ -118,6 +124,7 @@ def main():
             tags = host["tags"]
             print(f'{name}: \"{" ".join(tags)}\"')
     else:
+        counts = dict()
         for host in hosts:
             offlinestr=''
             if host["offline"]:
@@ -125,6 +132,16 @@ def main():
                 if 'offline_reason' in host:
                     offlinestr += f' {host["offline_reason"]}'
             print(f'{host["name"]}: {args.delimiter.join(host["tags"])} {offlinestr}')
+
+            for t in sets_of_interest:
+                s = set(t)
+                if s <= set(host["tags"]):
+                    key = ' '.join(sorted(s))
+                    if key in counts:
+                        counts[key] += 1
+                    else:
+                        counts[key] = 1
+        print(counts)
 
 if __name__ == "__main__":
     sys.exit(main())
