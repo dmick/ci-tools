@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import re
 import sys
 import subprocess
 import yaml
@@ -67,7 +68,7 @@ def main():
             ahost, atags = a.split(maxsplit=1)
             if ahost not in jhost and jhost not in ahost:
                 continue
-            jtags = jtags.replace(" OFFLINE", "")
+            jtags = re.sub(" OFFLINE.*$", "", jtags)
             jtags = jtags.split(maxsplit=1)[1]
             atags = split_sort_join(atags)
             jtags = split_sort_join(jtags)
