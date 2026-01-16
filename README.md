@@ -20,3 +20,5 @@ further query, etc.  Also gets a list of all jobnames.  WIP.
 - **nodestatus.py**: Show current status of all jenkins nodes; if running a
 build, show some info about the build; if offline, try to show who and why.
 WIP.
+
+  **maasapi.py**: call the MaaS API; handles the OAuth authentication, allows get/put/post/delete operations
